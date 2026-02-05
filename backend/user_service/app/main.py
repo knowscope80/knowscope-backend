@@ -1,17 +1,10 @@
 from fastapi import FastAPI
-from .routes import router
-from .database import engine
-from .models import Base
+from app.routes import router
 
-app = FastAPI()  
-
-@app.on_event("startup")
-def startup():
-    Base.metadata.create_all(bind=engine)
+app = FastAPI(title="Knowscope User Service")
 
 app.include_router(router)
 
 @app.get("/")
-def root():
-    return {"message": "User service running"}
-
+async def root():
+    return {"status": "user service running"}
