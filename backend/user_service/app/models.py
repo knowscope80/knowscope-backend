@@ -1,23 +1,10 @@
+from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Boolean
-from sqlalchemy.orm import declarative_base
-
-Base = declarative_base()
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-
-    full_name = Column(String, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password = Column(String, nullable=True)  # OAuth-safe
-
-    role = Column(String, default="student")
-
-    education = Column(String, nullable=True)
-    institution = Column(String, nullable=True)
-    year_of_study = Column(String, nullable=True)
-
-    is_active = Column(Boolean, default=True)
+def user_document(data: dict) -> dict:
+    return {
+        "google_id": data["google_id"],
+        "email": data["email"],
+        "name": data.get("name"),
+        "picture": data.get("picture"),
+        "created_at": datetime.utcnow()
+    }

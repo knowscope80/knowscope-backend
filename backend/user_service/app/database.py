@@ -1,23 +1,15 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import os
+from motor.motor_asyncio import AsyncIOMotorClient
+from dotenv import load_dotenv
 
-DATABASE_URL = "sqlite:///./test.db"  # TEMP for now
+load_dotenv()
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = os.getenv("MONGO_DB")
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine
-)
+client = AsyncIOMotorClient(MONGO_URI)
 
+db = client[DB_NAME]
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# example collection
+users_collection = db["users"]
