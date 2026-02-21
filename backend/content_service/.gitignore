@@ -1,6 +1,82 @@
-# -----------------------------
+# # -----------------------------
+# # Python
+# # -----------------------------
+# __pycache__/
+# *.py[cod]
+# *$py.class
+# *.so
+
+# # Virtual Environment
+
+# .content_venv/
+# ENV/
+
+# # -----------------------------
+# # Environment Variables
+# # -----------------------------
+# .env
+# .env.*
+# *.env
+
+# # -----------------------------
+# # IDE / Editor
+# # -----------------------------
+# .vscode/
+# .idea/
+# *.swp
+# *.swo
+
+# # -----------------------------
+# # Logs
+# # -----------------------------
+# *.log
+# logs/
+
+# # -----------------------------
+# # Database / Local Data
+# # -----------------------------
+# *.sqlite3
+# *.db
+
+# # -----------------------------
+# # Sentence Transformers Cache
+# # -----------------------------
+# .cache/
+# huggingface/
+# *.pt
+# *.bin
+# *.model
+
+# # -----------------------------
+# # OS Files
+# # -----------------------------
+# .DS_Store
+# Thumbs.db
+
+# # -----------------------------
+# # Build / Distribution
+# # -----------------------------
+# build/
+# dist/
+# *.egg-info/
+# .eggs/
+
+# # -----------------------------
+# # Testing
+# # -----------------------------
+# .pytest_cache/
+# .coverage
+# htmlcov/
+
+# # -----------------------------
+# # Jupyter Notebooks
+# # -----------------------------
+# .ipynb_checkpoints/
+
+
+
+
 # Python
-# -----------------------------
 __pycache__/
 *.py[cod]
 *$py.class
@@ -8,68 +84,62 @@ __pycache__/
 
 # Virtual Environment
 venv/
-.env/
 .venv/
+content_venv/
 ENV/
 
-# -----------------------------
 # Environment Variables
-# -----------------------------
 .env
 .env.*
 *.env
 
-# -----------------------------
 # IDE / Editor
-# -----------------------------
 .vscode/
 .idea/
 *.swp
 *.swo
 
-# -----------------------------
 # Logs
-# -----------------------------
 *.log
 logs/
 
-# -----------------------------
 # Database / Local Data
-# -----------------------------
 *.sqlite3
 *.db
 
-# -----------------------------
+# MongoDB local files
+WiredTiger*
+_mdb_catalog.wt
+journal/
+diagnostic.data/
+storage.bson
+*.wt
+*.lock
+
 # Sentence Transformers Cache
-# -----------------------------
 .cache/
 huggingface/
 *.pt
 *.bin
 *.model
 
-# -----------------------------
 # OS Files
-# -----------------------------
 .DS_Store
 Thumbs.db
 
-# -----------------------------
 # Build / Distribution
-# -----------------------------
 build/
 dist/
 *.egg-info/
 .eggs/
 
-# -----------------------------
-# Testing
-# -----------------------------
+# Testing / Coverage
 .pytest_cache/
 .coverage
 htmlcov/
 
-# -----------------------------
 # Jupyter Notebooks
-# -----------------------------
 .ipynb_checkpoints/
+
+# Optional test outputs
+*.txt

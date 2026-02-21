@@ -5,7 +5,7 @@ model = SentenceTransformer("BAAI/bge-small-en-v1.5")
 
 
 async def generate_embedding(text: str) -> list[float]:
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     embedding = await loop.run_in_executor(
         None,
         lambda: model.encode(
