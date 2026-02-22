@@ -1,3 +1,183 @@
+# name: Backend CI/CD Pipeline
+
+# on:
+#   push:
+#     branches: [ "main", "developer" ]
+#   pull_request:
+#     branches: [ "main", "developer" ]
+
+# # Minimum permissions required for OIDC authentication
+# permissions:
+#   id-token: write
+#   contents: read
+
+# env:
+#   # AWS_REGION: us-east-1 # TODO: Change to your actual AWS region
+#   ECS_CLUSTER: knowscope-cluster
+#   # Ensure ECR repositories are named matching these
+#   USER_ECR: knowscope/user-service
+#   AI_ECR: knowscope/agentic-ai-service
+#   CONTENT_ECR: knowscope/content-service
+
+# jobs:
+#   # ==========================================
+#   # 1. CI / BUILD AND TEST STAGE
+#   # ==========================================
+#   ci-build-test:
+#     name: Build and Test Services
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         service: [user_service, agentic_ai_service, content_service]
+    
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.13'
+#           cache: 'pip' # Speeds up installation
+
+#       - name: Install dependencies & Test
+#         working-directory: backend/${{ matrix.service }}
+#         run: |
+#           pip install -r requirements.txt
+#           python -m py_compile app/main.py
+#           # Run pytest if tests exist: 
+#           # pytest tests/ || echo "No tests configured yet"
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
+
+#       - name: Build Docker Image (CI check)
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: backend/${{ matrix.service }}
+#           push: false # Only build to ensure it complies successfully
+#           tags: ${{ matrix.service }}:test-build
+#           cache-from: type=gha,scope=${{ matrix.service }}
+#           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+#   # ==========================================
+#   # 2. CD / PUSH & DEPLOY TO AWS
+#   #    (Runs ONLY on push to main/developer)
+#   # ==========================================
+#   cd-deploy-aws:
+#     name: Build, Push to ECR, and Deploy to ECS
+#     needs: [ci-build-test]
+#     if: github.event_name == 'push'
+#     runs-on: ubuntu-latest
+    
+#     steps:
+#       - name: Checkout Repository
+#         uses: actions/checkout@v4
+
+#       - name: Configure AWS credentials via OIDC
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+#           aws-region: ${{ env.AWS_REGION }}
+
+#       - name: Login to Amazon ECR
+#         id: login-ecr
+#         uses: aws-actions/amazon-ecr-login@v2
+
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
+
+#       - name: Build, tag, and push images to Amazon ECR
+#         id: build-images
+#         env:
+#           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#           IMAGE_TAG: ${{ github.sha }}
+#         run: |
+#           # Function to build and push
+#           build_and_push() {
+#             local dir=$1
+#             local repo=$2
+#             docker build -t $ECR_REGISTRY/$repo:$IMAGE_TAG -t $ECR_REGISTRY/$repo:latest "$dir"
+#             docker push $ECR_REGISTRY/$repo:$IMAGE_TAG
+#             docker push $ECR_REGISTRY/$repo:latest
+#           }
+
+#           # Build and push backends
+#           build_and_push backend/user_service $USER_ECR
+#           build_and_push backend/agentic_ai_service $AI_ECR
+#           build_and_push backend/content_service $CONTENT_ECR
+
+#       # =========================================================================
+#       # DEPLOY: USER SERVICE
+#       # =========================================================================
+#       - name: Download User Service ECS Task Definition
+#         run: |
+#           aws ecs describe-task-definition --task-definition user-service --query taskDefinition > task-definition-user.json
+
+#       - name: Fill in the new image ID in the ECS task definition
+#         id: task-def-user
+#         uses: aws-actions/amazon-ecs-render-task-definition@v1
+#         with:
+#           task-definition: task-definition-user.json
+#           container-name: user-service-container
+#           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.USER_ECR }}:${{ github.sha }}
+
+#       - name: Deploy Amazon ECS task definition (Zero Downtime)
+#         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#         with:
+#           task-definition: ${{ steps.task-def-user.outputs.task-definition }}
+#           service: user-ecs-service
+#           cluster: ${{ env.ECS_CLUSTER }}
+#           wait-for-service-stability: true
+
+#       # =========================================================================
+#       # DEPLOY: AGENTIC AI SERVICE
+#       # =========================================================================
+#       - name: Download Agentic AI Service ECS Task Definition
+#         run: |
+#           aws ecs describe-task-definition --task-definition agentic-ai-service --query taskDefinition > task-definition-ai.json
+
+#       - name: Fill in the new image ID in the ECS task definition
+#         id: task-def-ai
+#         uses: aws-actions/amazon-ecs-render-task-definition@v1
+#         with:
+#           task-definition: task-definition-ai.json
+#           container-name: agentic-ai-service-container
+#           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.AI_ECR }}:${{ github.sha }}
+
+#       - name: Deploy Amazon ECS task definition (Zero Downtime)
+#         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#         with:
+#           task-definition: ${{ steps.task-def-ai.outputs.task-definition }}
+#           service: agentic-ai-ecs-service
+#           cluster: ${{ env.ECS_CLUSTER }}
+#           wait-for-service-stability: true
+
+#       # =========================================================================
+#       # DEPLOY: CONTENT SERVICE
+#       # =========================================================================
+#       - name: Download Content Service ECS Task Definition
+#         run: |
+#           aws ecs describe-task-definition --task-definition content-service --query taskDefinition > task-definition-content.json
+
+#       - name: Fill in the new image ID in the ECS task definition
+#         id: task-def-content
+#         uses: aws-actions/amazon-ecs-render-task-definition@v1
+#         with:
+#           task-definition: task-definition-content.json
+#           container-name: content-service-container
+#           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.CONTENT_ECR }}:${{ github.sha }}
+
+#       - name: Deploy Amazon ECS task definition (Zero Downtime)
+#         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+#         with:
+#           task-definition: ${{ steps.task-def-content.outputs.task-definition }}
+#           service: content-ecs-service
+#           cluster: ${{ env.ECS_CLUSTER }}
+#           wait-for-service-stability: true
+
+
+
 name: Backend CI/CD Pipeline
 
 on:
@@ -6,30 +186,30 @@ on:
   pull_request:
     branches: [ "master", "developer" ]
 
-# Minimum permissions required for OIDC authentication
 permissions:
   id-token: write
   contents: read
 
 env:
-  AWS_REGION: ap-south-1 # TODO: Change to your actual AWS region
+  AWS_REGION: ap-south-1
   ECS_CLUSTER: knowscope-cluster
-  # Ensure ECR repositories are named matching these
   USER_ECR: knowscope/user-service
   AI_ECR: knowscope/agentic-ai-service
   CONTENT_ECR: knowscope/content-service
 
 jobs:
+
   # ==========================================
-  # 1. CI / BUILD AND TEST STAGE
+  # 1️⃣ CI - BUILD & TEST
   # ==========================================
   ci-build-test:
     name: Build and Test Services
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         service: [user_service, agentic_ai_service, content_service]
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -38,43 +218,40 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-          cache: 'pip' # Speeds up installation
+          cache: 'pip'
 
-      - name: Install dependencies & Test
+      - name: Install dependencies & Syntax Check
         working-directory: backend/${{ matrix.service }}
         run: |
           pip install -r requirements.txt
           python -m py_compile app/main.py
-          # Run pytest if tests exist: 
-          # pytest tests/ || echo "No tests configured yet"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Image (CI check)
+      - name: Build Docker Image (CI validation only)
         uses: docker/build-push-action@v5
         with:
           context: backend/${{ matrix.service }}
-          push: false # Only build to ensure it complies successfully
-          tags: ${{ matrix.service }}:test-build
+          push: false
+          tags: ${{ matrix.service }}:ci-test
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   # ==========================================
-  # 2. CD / PUSH & DEPLOY TO AWS
-  #    (Runs ONLY on push to main/developer)
+  # 2️⃣ CD - PUSH & DEPLOY
   # ==========================================
   cd-deploy-aws:
-    name: Build, Push to ECR, and Deploy to ECS
+    name: Deploy to AWS ECS
     needs: [ci-build-test]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials via OIDC
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
@@ -87,14 +264,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build, tag, and push images to Amazon ECR
-        id: build-images
+      - name: Build and Push Docker Images
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          # Function to build and push
-          build_and_push() {
+          build_and_push () {
             local dir=$1
             local repo=$2
             docker build -t $ECR_REGISTRY/$repo:$IMAGE_TAG -t $ECR_REGISTRY/$repo:latest "$dir"
@@ -102,27 +277,22 @@ jobs:
             docker push $ECR_REGISTRY/$repo:latest
           }
 
-          # Build and push backends
           build_and_push backend/user_service $USER_ECR
           build_and_push backend/agentic_ai_service $AI_ECR
           build_and_push backend/content_service $CONTENT_ECR
 
-      # =========================================================================
-      # DEPLOY: USER SERVICE
-      # =========================================================================
-      - name: Download User Service ECS Task Definition
-        run: |
-          aws ecs describe-task-definition --task-definition user-service --query taskDefinition > task-definition-user.json
-
-      - name: Fill in the new image ID in the ECS task definition
+      # ==========================================
+      # 🚀 DEPLOY USER SERVICE
+      # ==========================================
+      - name: Render User Task Definition
         id: task-def-user
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition-user.json
+          task-definition: ecs/user-task-def.json
           container-name: user-service-container
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.USER_ECR }}:${{ github.sha }}
 
-      - name: Deploy Amazon ECS task definition (Zero Downtime)
+      - name: Deploy User Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def-user.outputs.task-definition }}
@@ -130,22 +300,18 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
-      # =========================================================================
-      # DEPLOY: AGENTIC AI SERVICE
-      # =========================================================================
-      - name: Download Agentic AI Service ECS Task Definition
-        run: |
-          aws ecs describe-task-definition --task-definition agentic-ai-service --query taskDefinition > task-definition-ai.json
-
-      - name: Fill in the new image ID in the ECS task definition
+      # ==========================================
+      # 🚀 DEPLOY AGENTIC AI SERVICE
+      # ==========================================
+      - name: Render Agentic AI Task Definition
         id: task-def-ai
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition-ai.json
+          task-definition: ecs/agentic-ai-task-def.json
           container-name: agentic-ai-service-container
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.AI_ECR }}:${{ github.sha }}
 
-      - name: Deploy Amazon ECS task definition (Zero Downtime)
+      - name: Deploy Agentic AI Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def-ai.outputs.task-definition }}
@@ -153,22 +319,18 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
-      # =========================================================================
-      # DEPLOY: CONTENT SERVICE
-      # =========================================================================
-      - name: Download Content Service ECS Task Definition
-        run: |
-          aws ecs describe-task-definition --task-definition content-service --query taskDefinition > task-definition-content.json
-
-      - name: Fill in the new image ID in the ECS task definition
+      # ==========================================
+      # 🚀 DEPLOY CONTENT SERVICE
+      # ==========================================
+      - name: Render Content Task Definition
         id: task-def-content
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition-content.json
+          task-definition: ecs/content-task-def.json
           container-name: content-service-container
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.CONTENT_ECR }}:${{ github.sha }}
 
-      - name: Deploy Amazon ECS task definition (Zero Downtime)
+      - name: Deploy Content Service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def-content.outputs.task-definition }}
