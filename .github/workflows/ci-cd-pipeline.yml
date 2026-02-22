@@ -2,9 +2,9 @@ name: Backend CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main", "developer" ]
+    branches: [ "master", "developer" ]
   pull_request:
-    branches: [ "main", "developer" ]
+    branches: [ "master", "developer" ]
 
 # Minimum permissions required for OIDC authentication
 permissions:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: us-east-1 # TODO: Change to your actual AWS region
+  AWS_REGION: ap-south-1 # TODO: Change to your actual AWS region
   ECS_CLUSTER: knowscope-cluster
   # Ensure ECR repositories are named matching these
   USER_ECR: knowscope/user-service
