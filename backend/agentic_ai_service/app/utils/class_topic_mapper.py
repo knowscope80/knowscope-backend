@@ -11,13 +11,13 @@ from typing import Dict, Tuple
 CLASS_TOPIC_MAP: Dict[Tuple[str, str], str] = {
 
     # ── MATH ────────────────────────────────────────────────────────────────
-    ("math", "class 6"):  "basic_arithmetic_and_fractions",
-    ("math", "class 7"):  "rational_numbers_and_algebra",
-    ("math", "class 8"):  "linear_equations_and_mensuration",
-    ("math", "class 9"):  "number_systems_and_coordinate_geometry",
-    ("math", "class 10"): "quadratic_equations_and_trigonometry",
-    ("math", "class 11"): "sets_relations_and_functions",
-    ("math", "class 12"): "calculus_and_linear_programming",
+    ("maths", "class 6"):  "basic_arithmetic_and_fractions",
+    ("maths", "class 7"):  "rational_numbers_and_algebra",
+    ("maths", "class 8"):  "linear_equations_and_mensuration",
+    ("maths", "class 9"):  "number_systems_and_coordinate_geometry",
+    ("maths", "class 10"): "quadratic_equations_and_trigonometry",
+    ("maths", "class 11"): "sets_relations_and_functions",
+    ("maths", "class 12"): "calculus_and_linear_programming",
 
     ("mathematics", "class 6"):  "basic_arithmetic_and_fractions",
     ("mathematics", "class 7"):  "rational_numbers_and_algebra",

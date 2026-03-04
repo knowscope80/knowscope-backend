@@ -5,6 +5,7 @@ from app.services.quiz_repository import save_quiz
 from app.schemas.evaluation import EvaluationRequest, EvaluationResponse
 from app.graphs.evaluation_graph import run_evaluation_pipeline
 from app.utils.class_topic_mapper import resolve_topic, list_supported_mappings
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Knowscope Agentic Service")
 
@@ -91,3 +92,14 @@ async def evaluate_quiz(request: EvaluationRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Evaluation failed")    
+
+
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
