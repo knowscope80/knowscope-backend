@@ -10,6 +10,11 @@ def extract_pages(pdf_path: str):
             if raw_text and len(raw_text.strip()) > 30:
                 cleaned = normalize_text(raw_text)
                 if cleaned:
-                    pages.append({"page": idx + 1,"text": cleaned})
+                    pages.append(
+                        {
+                            "page": idx + 1,
+                            "text": cleaned,
+                        }
+                    )
 
     return pages

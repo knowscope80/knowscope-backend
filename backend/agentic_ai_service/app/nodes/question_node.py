@@ -5,17 +5,19 @@ from app.core.llm import get_llm
 from app.utils.json_parser import safe_json_parse
 
 
-async def generate_concept_questions(subject: str,
-                                     topic: str | None,
-                                     difficulty: str,
-                                     num_questions: int,
-                                     class_level: str | None = None):
+async def generate_concept_questions(
+    subject: str,
+    topic: str | None,
+    difficulty: str,
+    num_questions: int,
+    class_level: str | None = None,
+):
     """
     Generate conceptual questions in batches to avoid rate limits.
     Uses an academic prompt constrained to the given class syllabus.
     """
     llm = get_llm(temperature=0.2)
-    all_questions = []
+    all_questions: list[dict] = []
 
     # Buffer (+2) to ensure we hit num_questions after any filtering
     target_count = num_questions + 2
@@ -115,3 +117,4 @@ Output format MUST be:
         )
 
     return all_questions[:num_questions]
+

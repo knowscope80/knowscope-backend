@@ -1,15 +1,19 @@
 # app/services/quiz_repository.py
 
 from datetime import datetime
+
 from bson import ObjectId
+
 from app.core.database import quizzes_collection
 
 
-async def save_quiz(subject: str,
-                    class_level: str,
-                    topic: str | None,
-                    difficulty: str,
-                    questions: list):
+async def save_quiz(
+    subject: str,
+    class_level: str,
+    topic: str | None,
+    difficulty: str,
+    questions: list,
+):
     """
     Store quiz in MongoDB.
     """
@@ -20,7 +24,7 @@ async def save_quiz(subject: str,
         "topic": topic,
         "difficulty": difficulty,
         "questions": questions,
-        "created_at": datetime.utcnow()
+        "created_at": datetime.utcnow(),
     }
 
     result = await quizzes_collection.insert_one(quiz_doc)
